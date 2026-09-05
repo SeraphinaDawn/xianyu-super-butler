@@ -1,4 +1,4 @@
-import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import React, { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
   AlertTriangle,
@@ -172,6 +172,100 @@ export const PageLoading: React.FC<{ label?: string }> = ({ label = '正在加�
     <span>{label}</span>
   </div>
 );
+
+interface TooltipProps {
+  /** 气泡内容，通常为一句操作或字段说明。 */
+  content: React.ReactNode;
+  /** 气泡方位；同侧空间不足时自动翻转到另一侧。 */
+  side?: 'top' | 'bottom';
+  /** 与触发器的水平对齐，贴边触发器用 right/left 防止溢出视口。 */
+  align?: 'left' | 'center' | 'right';
+  /** 触发器，通常为说明图标按钮：悬浮、聚焦或点击都会显示气泡。 */
+  children: React.ReactElement;
+}
+
+/** 通用说明气泡：挂载到 body 定位，不受父级 overflow 裁剪影响。 */
+export const Tooltip: React.FC<TooltipProps> = ({ content, side = 'top', align = 'center', children }) => {
+  const [open, setOpen] = useState(false);
+  const [coords, setCoords] = useState<{ top: number; left: number; resolvedSide: 'top' | 'bottom' } | null>(null);
+  const rootRef = useRef<HTMLSpanElement>(null);
+  const bubbleRef = useRef<HTMLSpanElement>(null);
+  const id = useId();
+
+  useLayoutEffect(() => {
+    if (!open) return undefined;
+    const update = () => {
+      const rect = rootRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      const margin = 8;
+      const gap = 6;
+      const bubbleWidth = bubbleRef.current?.offsetWidth ?? 0;
+      const bubbleHeight = bubbleRef.current?.offsetHeight ?? 0;
+      const spaceAbove = rect.top - margin;
+      const spaceBelow = window.innerHeight - rect.bottom - margin;
+      const resolvedSide: 'top' | 'bottom' = side === 'top'
+        ? (spaceAbove >= bubbleHeight || spaceAbove >= spaceBelow ? 'top' : 'bottom')
+        : (spaceBelow >= bubbleHeight || spaceBelow >= spaceAbove ? 'bottom' : 'top');
+      const left = align === 'left'
+        ? rect.left
+        : align === 'right'
+          ? rect.right - bubbleWidth
+          : rect.left + rect.width / 2 - bubbleWidth / 2;
+      setCoords({
+        top: resolvedSide === 'top' ? rect.top - bubbleHeight - gap : rect.bottom + gap,
+        left: Math.min(Math.max(margin, left), Math.max(margin, window.innerWidth - bubbleWidth - margin)),
+        resolvedSide,
+      });
+    };
+    update();
+    let frame = 0;
+    const requestUpdate = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(update);
+    };
+    window.addEventListener('resize', requestUpdate);
+    window.addEventListener('scroll', requestUpdate, true);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener('resize', requestUpdate);
+      window.removeEventListener('scroll', requestUpdate, true);
+    };
+  }, [open, side, align, content]);
+
+  const trigger = React.isValidElement<{ 'aria-describedby'?: string }>(children)
+    ? React.cloneElement(children, { 'aria-describedby': open ? id : undefined })
+    : children;
+
+  return (
+    <>
+      <span
+        ref={rootRef}
+        className="ui-tooltip"
+        onMouseEnter={() => setOpen(true)}
+        onMouseLeave={() => setOpen(false)}
+        onFocusCapture={() => setOpen(true)}
+        onBlurCapture={() => setOpen(false)}
+        onClick={() => setOpen(true)}
+      >
+        {trigger}
+      </span>
+      {createPortal(
+        <span
+          ref={bubbleRef}
+          role="tooltip"
+          id={id}
+          className={`ui-tooltip__bubble ui-tooltip__bubble--${coords?.resolvedSide ?? side} ui-tooltip__bubble--${align} ${
+            open ? 'ui-tooltip__bubble--open' : ''
+          }`}
+          style={open && coords ? { top: coords.top, left: coords.left } : undefined}
+        >
+          {content}
+        </span>,
+        document.body,
+      )}
+    </>
+  );
+};
 
 interface PopoverProps {
   open: boolean;

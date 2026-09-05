@@ -22,7 +22,7 @@ const QuoteBookList = ({ books, isRefreshing, isDeletingId, onRefresh, onDelete 
   <section className="section-panel" aria-labelledby="rate-book-list-title">
     <SectionHeader
       title="已识别的报价表"
-      description="识别结果会自动保存，后续的报价设置与自动报价都会用到这些数据。"
+      description="识别结果会自动保存，后续的报价设置与消息模板设置都会用到这些数据。"
       icon={FileSpreadsheet}
       actions={(
         <>

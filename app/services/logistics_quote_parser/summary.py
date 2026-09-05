@@ -27,6 +27,7 @@ def _new_rate_book_summary_state() -> dict[str, Any]:
         "total_rows": 0,
         "route_keys": set(),
         "book_kinds": set(),
+        "sample_row": None,
     }
 
 
@@ -118,6 +119,8 @@ def _add_rate_book_summary_row(
         context["column_specs"],
         context["sheet_carrier"],
     )
+    if state["sample_row"] is None:
+        state["sample_row"] = result
     state[result["review_state"]] += 1
     state["total_rows"] += 1
     if result["book_kind"]:
@@ -314,6 +317,7 @@ def _parse_rate_book_summary(data: bytes, file_type: str) -> dict[str, Any]:
         "services": services,
         "carriers": list(state["carriers"].values()),
         "rows": [],
+        "sample_row": state["sample_row"],
         "warning_count": len(state["warnings"]),
         "warnings": state["warnings"][:MAX_WARNINGS],
     }

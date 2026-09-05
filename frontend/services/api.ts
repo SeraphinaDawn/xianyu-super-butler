@@ -1173,6 +1173,7 @@ export interface LogisticsQuoteParseResponse {
   }>;
   carriers: LogisticsQuoteCarrier[];
   rows: LogisticsQuoteParseRow[];
+  sample_row: LogisticsQuoteParseRow | null;
   warning_count: number;
   warnings: string[];
 }
@@ -1208,4 +1209,3 @@ export const createQuoteBook = async (file: File): Promise<{ success: boolean; b
 
 export const deleteQuoteBook = async (bookId: number): Promise<{ success: boolean }> =>
   del(`/api/logistics/quote-books/${bookId}`);
-

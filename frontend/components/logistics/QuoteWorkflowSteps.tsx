@@ -1,6 +1,6 @@
-import { Bot, FileSpreadsheet, SlidersHorizontal, type LucideIcon } from 'lucide-react';
+import { Bot, ClipboardCheck, FileSpreadsheet, SlidersHorizontal, type LucideIcon } from 'lucide-react';
 
-export type StepId = 'recognition' | 'settings' | 'apply';
+export type StepId = 'recognition' | 'settings' | 'apply' | 'diagnose';
 
 export interface WorkflowStep {
   id: StepId;
@@ -28,10 +28,17 @@ export const workflowSteps: WorkflowStep[] = [
   },
   {
     id: 'apply',
-    label: '自动报价',
-    description: '把识别结果接入 AI 回复与自动发货，由 AI 按报价自动回复买家',
+    label: '消息模板设置',
+    description: '配置 AI 自动报价时发给买家的消息模板：报价、差价分支、引导拍下与追问等文案',
     icon: Bot,
-    implemented: false,
+    implemented: true,
+  },
+  {
+    id: 'diagnose',
+    label: '功能检测',
+    description: '对识别、计价与消息模板做完整功能检测，确认报价配置可正常生效',
+    icon: ClipboardCheck,
+    implemented: true,
   },
 ];
 

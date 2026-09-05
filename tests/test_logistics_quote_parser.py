@@ -257,6 +257,9 @@ class ThreeCarrierLayoutTests(unittest.TestCase):
         self.assertEqual(result["book_kind"], "logistics")
         self.assertEqual(result["summary"]["total"], 5)
         self.assertEqual(result["rows"], [])
+        self.assertIsNotNone(result["sample_row"])
+        self.assertEqual(result["sample_row"]["carrier"], "百世快运")
+        self.assertEqual(result["sample_row"]["source_row"], 2)
         self.assertEqual(
             [
                 (service["name"], service["rule_type"], service["row_count"], service["route_count"])

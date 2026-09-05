@@ -15,13 +15,35 @@ export interface LogisticsInput {
   length_cm?: number | null;
   width_cm?: number | null;
   height_cm?: number | null;
+  /** 承运商侧支付方式：顺心捷达等按此区分抛比（线下/线上）。 */
+  carrier_payment_mode?: 'offline' | 'online';
   quote_config: QuoteConfig;
 }
 
 export interface QuoteConfig {
   price_basis?: 'cost' | 'markup';
   carriers: Record<string, CarrierConfig>;
+  /** 承运商未在自身配置里指定抛比时套用的默认抛比规则，键为承运商名。 */
+  default_volume_ratios?: Record<string, VolumeRatioRule>;
 }
+
+/** 按计费重分段的抛比规则：不高于 threshold_kg（含）用 light，否则用 heavy。 */
+export interface WeightTieredVolumeRatio {
+  basis: 'weight';
+  threshold_kg: number;
+  light: number;
+  heavy: number;
+}
+
+/** 按承运商支付方式分段的抛比规则：线下支付用 offline，其余（含未传）用 online。 */
+export interface PaymentTieredVolumeRatio {
+  basis: 'payment';
+  offline: number;
+  online: number;
+}
+
+/** 抛比规则：固定数值、按计费重分段，或按支付方式分段。 */
+export type VolumeRatioRule = number | WeightTieredVolumeRatio | PaymentTieredVolumeRatio;
 
 export interface CarrierConfig {
   volume_ratio?: number;
@@ -146,11 +168,24 @@ function calculateRouteWeight(
 
 /**
  * 3. 获取承运商抛比
+ *
+ * 优先级：承运商自身配置 > default_volume_ratios 设置 > 内置兜底规则。
+ * 承运商名先归一（去空白、品牌别名），与报价表里的叫法对齐。
  */
+function resolveCarrierKey(carrier: string): string {
+  const compact = carrier.replace(/\s+/g, '');
+  if (compact.includes('顺心')) return '顺心捷达';
+  if (compact === '百世') return '百世快运';
+  if (compact === '跨越') return '跨越速运';
+  return compact;
+}
+
 function getCarrierRatio(
   carrier: string,
   weight: number | undefined,
-  config: CarrierConfig
+  config: CarrierConfig,
+  defaultRules?: Record<string, VolumeRatioRule>,
+  paymentMode?: 'offline' | 'online'
 ): number {
   // 优先使用配置中的抛比
   if (config.volume_ratio) {
@@ -158,17 +193,26 @@ function getCarrierRatio(
   }
 
   const W = weight || 0;
+  const key = resolveCarrierKey(carrier);
 
-  // 默认抛比规则（Legacy）
-  const defaults: Record<string, number | ((w: number) => number)> = {
+  // 报价设置里配置的默认抛比
+  const rule = defaultRules?.[key];
+  if (rule != null) {
+    if (typeof rule === 'number') return rule;
+    if (rule.basis === 'payment') return paymentMode === 'offline' ? rule.offline : rule.online;
+    return W <= rule.threshold_kg ? rule.light : rule.heavy;
+  }
+
+  // 内置抛比规则（兜底）
+  const builtin: Record<string, number | ((w: number) => number)> = {
     普通快递: 8000,
     壹米滴答: 6000,
     百世快运: (w: number) => (w <= 70 ? 7000 : 5000),
-    跨越: 6000,
-    顺心: 6000,
+    跨越速运: 6000,
+    顺心捷达: () => (paymentMode === 'offline' ? 6000 : 5000),
   };
 
-  const ratio = defaults[carrier];
+  const ratio = builtin[key];
   if (typeof ratio === 'function') {
     return ratio(W);
   }
@@ -184,13 +228,15 @@ function calculateCarrierWeight(
   width_cm: number | null | undefined,
   height_cm: number | null | undefined,
   carrier: string,
-  config: CarrierConfig
+  config: CarrierConfig,
+  defaultRules?: Record<string, VolumeRatioRule>,
+  paymentMode?: 'offline' | 'online'
 ): {
   carrierChargeableWeight: number;
   volumeRatio: number;
 } {
   const W = weight || 0;
-  const ratio = getCarrierRatio(carrier, W, config);
+  const ratio = getCarrierRatio(carrier, W, config, defaultRules, paymentMode);
 
   let volumeWeight = 0;
   if (length_cm && width_cm && height_cm) {
@@ -342,7 +388,9 @@ export function calculateLogisticsQuote(input: LogisticsInput): QuoteResult {
         width_cm,
         height_cm,
         carrierName,
-        carrierConfig
+        carrierConfig,
+        quote_config.default_volume_ratios,
+        input.carrier_payment_mode
       );
 
       const priceTable = carrierConfig.price_table;

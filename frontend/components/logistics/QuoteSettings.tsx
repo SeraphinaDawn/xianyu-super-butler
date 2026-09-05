@@ -4,12 +4,15 @@ import {
   DEFAULT_QUOTE_SETTINGS,
   loadQuoteSettings,
   saveQuoteSettings,
+  type QuoteNumberField,
   type QuoteSettings as QuoteSettingsData,
 } from '../../services/quoteSettings';
 import { sanitizeNumberText } from '../../utils/quoteTemplate';
+import FloatingSaveButton from '../FloatingSaveButton';
 import QuoteBasicSection from './QuoteBasicSection';
 import QuoteScopeSection from './QuoteScopeSection';
 import QuoteSmartCalcSection from './QuoteSmartCalcSection';
+import QuoteVolumeRatioSection from './QuoteVolumeRatioSection';
 
 const QuoteSettings = () => {
   const [form, setForm] = useState<QuoteSettingsData>(() => loadQuoteSettings());
@@ -21,7 +24,7 @@ const QuoteSettings = () => {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
-  const updateNumberField = (field: 'cardFaceValue' | 'platformFaceValue' | 'profitMarkup' | 'continuedMarkup', value: string) => {
+  const updateNumberField = (field: QuoteNumberField, value: string) => {
     updateField(field, sanitizeNumberText(value));
   };
 
@@ -32,8 +35,12 @@ const QuoteSettings = () => {
     notify('报价设置已保存');
   };
 
+  const handleDiscard = () => {
+    setForm({ ...saved });
+  };
+
   const handleReset = async () => {
-    const confirmed = await confirmAction('将把生效商品、智能计算与基础设置恢复为默认值。', { title: '恢复默认设置' });
+    const confirmed = await confirmAction('将把生效商品、智能计算、承运商抛比与基础设置恢复为默认值。', { title: '恢复默认设置' });
     if (confirmed) setForm({ ...DEFAULT_QUOTE_SETTINGS });
   };
 
@@ -45,6 +52,7 @@ const QuoteSettings = () => {
         onChangeSelectedItems={(keys) => updateField('selectedItemKeys', keys)}
       />
       <QuoteSmartCalcSection form={form} onChangeField={updateField} onNumberFieldChange={updateNumberField} />
+      <QuoteVolumeRatioSection form={form} onNumberFieldChange={updateNumberField} />
       <QuoteBasicSection form={form} onChangeField={updateField} />
 
       <section className="section-panel">
@@ -56,17 +64,18 @@ const QuoteSettings = () => {
             <button type="button" className="ios-btn-secondary rounded-md px-4 py-2 text-sm" onClick={() => void handleReset()}>
               恢复默认
             </button>
-            <button
-              type="button"
-              className="ios-btn-primary flex items-center gap-2 rounded-md px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-45"
-              disabled={!dirty}
-              onClick={handleSave}
-            >
-              保存设置
-            </button>
           </div>
         </div>
       </section>
+
+      <FloatingSaveButton
+        dirty={dirty}
+        guardKey="quote-settings"
+        guardLabel="报价设置"
+        label="保存设置"
+        onSave={handleSave}
+        onDiscard={handleDiscard}
+      />
     </div>
   );
 };

@@ -4,6 +4,7 @@ import GlobalFeedback from './components/GlobalFeedback';
 import AnnouncementBanner from './components/AnnouncementBanner';
 import ThemeToggle from './components/ThemeToggle';
 import { login, verifyToken, getPublicSettings, register, sendVerificationCode } from './services/api';
+import { confirmLeaveUnsaved } from './services/unsavedChanges';
 import { ShieldCheck, ArrowRight, Loader2, User, Lock, Menu, Mail, KeyRound, CheckCircle2 } from 'lucide-react';
 
 const Dashboard = lazy(() => import('./components/Dashboard'));
@@ -464,7 +465,8 @@ const App: React.FC = () => {
       <GlobalFeedback />
       <Sidebar 
         activeTab={activeTab} 
-        setActiveTab={(tab) => {
+        setActiveTab={async (tab) => {
+          if (tab !== activeTab && !(await confirmLeaveUnsaved())) return;
           setActiveTab(tab);
           setMobileMenuOpen(false);
         }}

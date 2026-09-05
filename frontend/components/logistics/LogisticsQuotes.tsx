@@ -10,8 +10,11 @@ import {
   extractParseError,
   supportedQuoteFilePattern,
 } from '../../services/logisticsQuote';
+import { confirmLeaveUnsaved } from '../../services/unsavedChanges';
 import { EmptyState, PageHeader } from '../ui';
+import QuoteAutoReply from './QuoteAutoReply';
 import QuoteBookList from './QuoteBookList';
+import QuoteDiagnostics from './QuoteDiagnostics';
 import QuoteRecognitionPanel from './QuoteRecognitionPanel';
 import QuoteSettings from './QuoteSettings';
 import { StepCard, workflowSteps, type StepId } from './QuoteWorkflowSteps';
@@ -104,22 +107,28 @@ const LogisticsQuotes = () => {
 
   const activeWorkflowStep = workflowSteps.find((step) => step.id === activeStep) ?? workflowSteps[0];
 
+  const handleSelectStep = async (id: StepId) => {
+    if (id === activeStep) return;
+    if (!(await confirmLeaveUnsaved())) return;
+    setActiveStep(id);
+  };
+
   return (
     <div className="page-stack mx-auto w-full max-w-[1080px] animate-fade-in">
       <PageHeader
         icon={Calculator}
         title="物流报价"
-        description="维护承运商报价数据：先识别报价表，再配置报价设置，最终接入自动报价。识别结果会保存在本机，可随时管理。"
+        description="维护承运商报价数据：先识别报价表，再配置报价设置与消息模板，最后进行完整功能检测。识别结果会保存在本机，可随时管理。"
       />
 
-      <ol className="grid gap-3 sm:grid-cols-3" aria-label="物流报价流程">
+      <ol className="grid gap-3 sm:grid-cols-4" aria-label="物流报价流程">
         {workflowSteps.map((step, index) => (
           <li key={step.id} aria-current={activeStep === step.id ? 'step' : undefined}>
             <StepCard
               step={step}
               index={index}
               active={activeStep === step.id}
-              onSelect={setActiveStep}
+              onSelect={handleSelectStep}
             />
           </li>
         ))}
@@ -127,6 +136,10 @@ const LogisticsQuotes = () => {
 
       {activeStep === 'settings' ? (
         <QuoteSettings />
+      ) : activeStep === 'apply' ? (
+        <QuoteAutoReply />
+      ) : activeStep === 'diagnose' ? (
+        <QuoteDiagnostics />
       ) : activeStep === 'recognition' ? (
         <>
           <QuoteRecognitionPanel

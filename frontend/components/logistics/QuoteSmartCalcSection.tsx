@@ -1,21 +1,24 @@
 import { ChevronDown, Sparkles } from 'lucide-react';
 import {
-  SAMPLE_CONTINUED_KG,
-  SAMPLE_FREIGHT,
+  type QuoteNumberField,
   type QuoteSettings,
 } from '../../services/quoteSettings';
-import { sampleTotals } from '../../utils/quoteTemplate';
+import { parsePositive } from '../../utils/quoteTemplate';
 import { SectionHeader } from '../ui';
 
 interface QuoteSmartCalcSectionProps {
   form: QuoteSettings;
   onChangeField: <K extends keyof QuoteSettings>(field: K, value: QuoteSettings[K]) => void;
-  onNumberFieldChange: (field: 'cardFaceValue' | 'platformFaceValue' | 'profitMarkup' | 'continuedMarkup', value: string) => void;
+  onNumberFieldChange: (field: QuoteNumberField, value: string) => void;
 }
 
-/** 智能计算：加价参数与示例计费预览。 */
+/** 智能计算：加价参数与真实报价核价前置状态。 */
 const QuoteSmartCalcSection = ({ form, onChangeField, onNumberFieldChange }: QuoteSmartCalcSectionProps) => {
-  const totals = sampleTotals(form);
+  const card = parsePositive(form.cardFaceValue);
+  const platform = parsePositive(form.platformFaceValue);
+  const profit = parsePositive(form.profitMarkup);
+  const continued = parsePositive(form.continuedMarkup);
+  const money = (value: number | null) => value === null ? '待配置' : `¥${value.toFixed(2)}`;
 
   return (
     <section className="section-panel" aria-labelledby="smart-calc-title">
@@ -78,14 +81,14 @@ const QuoteSmartCalcSection = ({ form, onChangeField, onNumberFieldChange }: Quo
         <details className="group overflow-hidden rounded-md border border-[var(--border)] bg-[var(--surface-subtle)]">
           <summary className="flex cursor-pointer select-none list-none flex-wrap items-center justify-between gap-2 rounded-md px-3.5 py-3 text-left transition-colors duration-150 hover:bg-[var(--surface-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)] motion-reduce:transition-none [&::-webkit-details-marker]:hidden">
             <span className="flex min-w-0 items-baseline gap-2">
-              <span className="text-[13px] font-bold text-[var(--text)]">示例预览</span>
+              <span className="text-[13px] font-bold text-[var(--text)]">计算预览</span>
               <span className="truncate text-xs text-[var(--text-muted)]">
-                按计费重 3kg（1kg 首重 + {SAMPLE_CONTINUED_KG}kg 续重）示例计算
+                等待已识别报价表与买家重量/体积
               </span>
             </span>
             <span className="flex shrink-0 items-center gap-2">
               <span className="text-xs text-[var(--text-muted)]">合计</span>
-              <span className="text-[13px] font-bold tabular-nums text-[var(--text)]">¥{totals.total.toFixed(2)}</span>
+              <span className="text-[13px] font-bold tabular-nums text-[var(--text)]">待核价</span>
               <ChevronDown
                 className="h-4 w-4 text-[var(--text-soft)] transition-transform duration-150 group-open:rotate-180 motion-reduce:transition-none"
                 aria-hidden="true"
@@ -96,27 +99,27 @@ const QuoteSmartCalcSection = ({ form, onChangeField, onNumberFieldChange }: Quo
             <div className="logistics-breakdown" aria-live="polite">
               <div>
                 <span>卡密面值</span>
-                <strong>¥{totals.card.toFixed(2)}</strong>
+                <strong>{money(card)}</strong>
               </div>
               <div>
-                <span>运费（示例：1kg 首重 ¥12 + {SAMPLE_CONTINUED_KG}kg 续重 × ¥4.8）</span>
-                <strong>¥{totals.freight.toFixed(2)}</strong>
+                <span>运费（来自已识别报价表，需结合买家信息核价）</span>
+                <strong>待核价</strong>
               </div>
               <div>
                 <span>利润加价</span>
-                <strong>+¥{totals.profit.toFixed(2)}</strong>
+                <strong>{profit === null ? '待配置' : `+¥${profit.toFixed(2)}`}</strong>
               </div>
               <div>
-                <span>续重加价 +¥{totals.continued.toFixed(2)}/kg × {SAMPLE_CONTINUED_KG}kg</span>
-                <strong>+¥{(totals.continued * SAMPLE_CONTINUED_KG).toFixed(2)}</strong>
+                <span>续重加价（需要买家计费重量）</span>
+                <strong>{continued === null ? '待配置' : `+¥${continued.toFixed(2)}/kg`}</strong>
               </div>
             </div>
             <div className="logistics-total mt-3">
               <div>
-                <span>买家应付合计（示例）</span>
-                <small>平台支付 ¥{totals.platform.toFixed(2)} · 余款 ¥{totals.remaining.toFixed(2)}，运费实际以已识别报价为准</small>
+                <span>买家应付合计</span>
+                <small>平台支付 {money(platform)}；完成买家信息识别后，按报价表实际线路计算</small>
               </div>
-              <strong>¥{totals.total.toFixed(2)}</strong>
+              <strong>待核价</strong>
             </div>
           </div>
         </details>
