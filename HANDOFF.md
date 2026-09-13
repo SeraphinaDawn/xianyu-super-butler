@@ -1311,3 +1311,26 @@ pm run build 成功（Vite 2401 modules）。
 - python -m pytest -q 当前环境未能收集测试：缺少 execjs、langchain_core、qrcode 等依赖；需按 requirements.txt 安装依赖后重跑。
 ## 发布状态
 - 下一步将 main 推送到 origin/main。
+
+## 分支清理与个人仓库同步（2026-09-13）
+
+### 任务目标
+
+确认尚未推送到个人仓库的分支，将其提交到 `origin`，并清理本地及个人远端中除 `main`、`ai/PriceQuote` 之外的分支。
+
+### 处理结果
+
+- `ai/PriceQuote` 本地分支相对 `origin/ai/PriceQuote` 超前 13 个提交，已推送到个人仓库（随后包含本记录的同步提交）。
+- `main` 与 `origin/main` 已同步。
+- 已删除本地分支：`AutoRedFlower`、`SKU-Limit`、`codex/desktop`、`codex/feature-notifications`、`codex/feature-notifications-clean`、`codex/feature-notifications-sku`。
+- 已删除个人远端 `origin` 上的 `codex/feature-notifications`、`codex/feature-notifications-clean`、`codex/feature-notifications-sku`；`AutoRedFlower`、`SKU-Limit`、`codex/desktop` 原本没有对应远端分支。
+- 保留分支：`main`、`ai/PriceQuote`。
+
+### 验证记录
+
+- 清理前通过 `git branch -vv`、`git ls-remote --heads origin` 核对本地/远端分支及提交差异。
+- 清理后将再次核对本地分支和 `origin` 远端分支列表，确保只剩目标分支。
+
+### 已知风险与后续步骤
+
+- `upstream` 仍保留其自身的远端分支；本次仅清理本地和个人仓库 `origin`，未修改上游仓库。
