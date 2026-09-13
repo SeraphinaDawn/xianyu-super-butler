@@ -1350,7 +1350,8 @@ pm run build 成功（Vite 2401 modules）。
 
 - 已确认 `parse_package_weights`、`plan_package_quote_mode` 等既有物流 Agent 功能仍存在。
 - 已确认通知实现文件和两组通知测试已进入 `main`。
-- 待执行前端构建与通知测试；若环境缺少依赖，记录具体缺失项。
+- `frontend` 执行 `npm run build` 成功（Vite 2376 modules）。
+- 通知测试已启动；部分测试因当前 `.venv-win` 缺少 `langchain_core` 导致导入失败，需安装项目依赖后重跑。
 
 ### 已知风险与后续步骤
 
