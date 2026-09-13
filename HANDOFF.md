@@ -1380,3 +1380,23 @@ pm run build 成功（Vite 2401 modules）。
 
 - 本地启动前后端后可直接进入“物流报价”验证上传、识别、设置、自动回复、诊断和 Agent 流程。
 - 若要发布占位版本，提交时保留 `main` 当前版本，不要暂存本地恢复的物流报价页面。
+
+### 本地静态产物修复（2026-09-13）
+
+- 根目录启动入口通过 `static/index.html` 提供前端，不会直接读取 `frontend/components` 下的 TSX。
+- 已基于本地完整物流报价源码重新执行 `npm --prefix frontend run build`，当前本地 `static/` 已加载完整物流报价页面。
+- `static/` 的构建变化仅供本地运行，提交时不得暂存；重新拉取或清理工作区后需再次构建才能恢复本地功能。
+
+## EXE 桌面版设计文档（2026-09-13）
+
+### 任务目标
+为现有 React + FastAPI 项目规划 Windows EXE，重点解决 Playwright/Chromium revision 绑定、滑块验证、数据持久化与安装升级。
+
+### 产出
+新增 [docs/exe-design.md](docs/exe-design.md)，推荐 pywebview + 本地 FastAPI + PyInstaller onedir + 内置 Playwright Chromium，并定义启动流程、运行时校验、目录、安全、安装器和分阶段实施方案。
+
+### 验证
+已检查 `README.md`、`requirements.txt`、`Start.py` 及项目目录；确认 Playwright 版本固定为 1.60.0，启动脚本已有浏览器探测/安装逻辑。
+
+### 后续
+按文档先做 pywebview PoC，再提取 `Start.py` 浏览器检查逻辑并制作 PyInstaller/Inno Setup 构建链。
